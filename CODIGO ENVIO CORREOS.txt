@@ -1,0 +1,157 @@
+Sub Envios()
+'inicializo la variable resultado
+
+Dim OutlookApp As Outlook.Application
+Dim Correo As Outlook.MailItem
+Dim archivo As String
+
+
+Sheets("Base").Select
+'1
+ Dim MySheet As Worksheet
+ Dim MyRange As Range
+ Dim UList As Collection
+ Dim UListValue As Variant
+ Dim i As Long
+ 
+ Sheets("Base").Select
+ 
+  
+  If ActiveSheet.AutoFilterMode Then
+        'Range("A1").AutoFilter
+    Else
+        Range("A1").AutoFilter
+    End If
+
+'2
+ 'Set MySheet = ActiveSheet
+ Set MySheet = Sheets("Base")
+ 
+ 
+'3
+ If MySheet.AutoFilterMode = False Then
+ Exit Sub
+ End If
+ 
+ 
+ 
+'4
+ Set MyRange = Range(MySheet.AutoFilter.Range.Columns(2).Address)
+ 
+'5
+ Set UList = New Collection
+ 
+'6
+ On Error Resume Next
+ For i = 2 To MyRange.Rows.Count
+ UList.Add MyRange.Cells(i, 1), CStr(MyRange.Cells(i, 1))
+ Next i
+ On Error GoTo 0
+ 
+'7
+ For Each UListValue In UList
+  
+'8
+ On Error Resume Next
+ Application.DisplayAlerts = False
+ Sheets(CStr(UListValue)).Delete
+ Application.DisplayAlerts = True
+ On Error GoTo 0
+ 
+'9
+ MyRange.AutoFilter Field:=2, Criteria1:=UListValue
+ 
+ 
+'10
+ 'Filtro = MySheet.AutoFilter.Range.Copy
+ 'Worksheets.Add.Paste
+ 'Workbooks.Add
+ 'ActiveSheet.Paste Destination:=Range("A1")
+ 'ActiveSheet.Name = Left(UListValue, 30)
+ 
+Range("A1").Select
+Range(Selection, Selection.End(xlDown)).Select
+Range(Selection, Selection.End(xlToRight)).Select
+Selection.Copy
+
+'Sheets.Add
+
+'Range("A1").PasteSpecial xlPasteAll
+
+
+
+Set OutlookApp = New Outlook.Application
+Set Correo = OutlookApp.CreateItem(o)
+'Crear el correo y mostrarlo
+'Destino = Range("D1")
+'BCC = Range("E1")
+mensaje = "Vehiculo Bloqueado"
+cuerpo = "Buen día <br><br> Se han bloqueado los siguientes vehiculos <br><br>"
+
+ini = Sheets("Correos").Range("A1").Row
+fin = Sheets("Correos").Range("A1", Sheets("Correos").Range("A1").End(xlDown)).Count
+
+Sheets("Base").Range("A1").Select
+Selection.End(xlToRight).Select
+ActiveCell.Offset(1, 0).Select
+Do Until ActiveCell.EntireRow.Hidden = False
+    area = ActiveCell.Offset(1, 0).Select
+Loop
+
+area = Selection.Value
+
+'area = Sheets("Base").Cells(2, 9).Value
+
+For i = ini To fin
+    If area = Sheets("Correos").Cells(i, 1).Value Then
+        Destino = Sheets("Correos").Cells(i, 1).Offset(0, 1).Value
+        BCC = Sheets("Correos").Cells(i, 1).Offset(0, 2).Value
+    End If
+'i = i + 1
+Next
+
+ActiveSheet.Range("A1").Select
+Range(Selection, Selection.End(xlDown)).Select
+Range(Selection, Selection.End(xlToRight)).Select
+Selection.Copy
+
+
+Set wordDoc = Correo.GetInspector.WordEditor
+
+
+wordDoc.Content.InsertParagraphbefore
+
+wordDoc.Paragraphs(1).Range.pasteandformat wdChartPicture
+
+wordDoc.Tables(1).AutoFitBehavior (2)
+
+
+'archivo = Range("C1")
+
+With Correo
+.Display
+    .To = Destino
+    .CC = BCC
+    .Subject = mensaje
+    '.Body = cuerpo
+    '.Body = cuerpo & .Body
+    .HTMLBody = cuerpo & .HTMLBody
+    '.Attachments.Add archivo
+    '.Send
+
+End With
+With Application
+.EnableEvents = True
+.ScreenUpdating = True
+End With
+
+
+'Sheets("Base").Select
+    
+ '11
+ Next UListValue
+ 
+ If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+ 
+     
+End Sub
